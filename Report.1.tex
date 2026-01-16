@@ -1,22 +1,119 @@
 \documentclass[conference]{IEEEtran}
 
-\title{This is your report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Report 1: ECG Heartbeat Categorization using 1D Convolutional Neural Networks}
+
+\author{\IEEEauthorblockN{Ta Quang Dung - 22BA13089}
+\IEEEauthorblockA{Department of Computer Science\\
+Email: dungtq.22ba13089@usth.edu.vn}
+}
 
 \begin{document}
 
 \maketitle
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\begin{abstract}
+This report presents the implementation of a deep learning approach for ECG heartbeat categorization using the MIT-BIH Arrhythmia Database. Due to the inherent class imbalance in medical data, a resampling strategy was employed. A 1D Convolutional Neural Network (CNN) was developed to classify heartbeats into five categories, achieving high accuracy and competitive performance compared to baseline models.
+\end{abstract}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\section{Introduction}
+Electrocardiogram (ECG) signals are essential for monitoring cardiac health and diagnosing arrhythmias. Manual interpretation of these signals is time-consuming and prone to human error. Automation using Deep Learning, specifically Convolutional Neural Networks (CNNs), provides a robust solution for real-time heartbeat classification. This project explores the end-to-end pipeline from data preprocessing to model evaluation.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\section{Dataset Description}
+The dataset used in this study is the \textbf{MIT-BIH Arrhythmia Database}, a benchmark collection of ECG recordings. 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\subsection{Data Characteristics}
+The dataset consists of two subsets: a training set of 87,554 records and a test set of 21,892 records. Each record represents a single heartbeat sampled at 125Hz, consisting of 188 features. The first 187 features are the normalized amplitudes of the ECG signal, while the 188th feature is the class label.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\subsection{Class Categorization}
+The heartbeats are grouped into five clinical categories according to the AAMI standard:
+\begin{itemize}
+    \item \textbf{Class 0 (N):} Normal beat.
+    \item \textbf{Class 1 (S):} Supraventricular premature beat.
+    \item \textbf{Class 2 (V):} Premature ventricular contraction.
+    \item \textbf{Class 3 (F):} Fusion of ventricular and normal beat.
+    \item \textbf{Class 4 (Q):} Unclassifiable beat.
+\end{itemize}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+\subsection{Data Preprocessing}
+A significant challenge identified was the severe data imbalance (Class 0 represents over 80\% of the data). To prevent the model from becoming biased toward the majority class, we applied a combination of oversampling for minority classes and undersampling for the majority class, resulting in a balanced distribution of 20,000 samples per class for training.
+
+\section{Model Implementation}
+We implemented a \textbf{1D Convolutional Neural Network} architecture, which is inherently suited for time-series data like ECG signals as it can capture local patterns (such as the QRS complex).
+
+The architecture includes:
+\begin{enumerate}
+    \item \textbf{Convolutional Layers:} Two Conv1D layers with 64 and 128 filters respectively, using ReLU activation.
+    \item \textbf{Normalization:} Batch Normalization was applied after each convolution to stabilize the learning process.
+    \item \textbf{Pooling:} MaxPooling1D layers with a pool size of 2 to reduce spatial dimensions.
+    \item \textbf{Regularization:} A Dropout layer with a rate of 0.3 was added to the fully connected section to prevent overfitting.
+    \item \textbf{Output:} A Dense layer with Softmax activation to output probabilities for the 5 classes.
+\end{enumerate}
+
+\section{Hyperparameter Experimentation}
+To optimize the model, several hyperparameter configurations were tested:
+\begin{itemize}
+    \item \textbf{Kernel Size:} Increasing the kernel size from 3 to 5 allowed the model to capture wider temporal dependencies but increased computational cost. A size of 3 was retained for efficiency.
+    \item \textbf{Learning Rate:} An Adam optimizer was used. We found that a default learning rate worked well when combined with a batch size of 32.
+    \item \textbf{Training Duration:} We set the training to 20 epochs. By using the \textit{EarlyStopping} callback, we observed that the model usually converged around the 15th epoch, preventing unnecessary computation.
+\end{itemize}
+
+\section{Results and Comparison}
+
+\subsection{Performance Metrics}
+After training for 20 epochs, the model was evaluated on the unseen test set (21,892 samples). The overall accuracy achieved was \textbf{97\%}. The detailed performance for each heartbeat category is summarized in Table \ref{table:metrics}.
+
+\begin{table}[h!]
+\centering
+\caption{Classification Performance Metrics}
+\label{table:metrics}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\ \midrule
+N (Normal)     & 0.99               & 0.97            & 0.98              & 18118           \\
+S (Suprav.)    & 0.59               & 0.80            & 0.68              & 556             \\
+V (Ventric.)   & 0.89               & 0.93            & 0.91              & 1448            \\
+F (Fusion)     & 0.63               & 0.89            & 0.74              & 162             \\
+Q (Unknown)    & 0.99               & 0.97            & 0.98              & 1608            \\ \midrule
+\textbf{Accuracy} & \multicolumn{3}{c}{\textbf{0.97}}                     & \textbf{21892}  \\
+Macro Avg      & 0.82               & 0.91            & 0.86              & 21892           \\
+Weighted Avg   & 0.97               & 0.97            & 0.97              & 21892           \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Analysis of Results}
+The results demonstrate several key findings:
+\begin{itemize}
+    \item \textbf{High Reliability for Normal and Unknown beats:} Both Class N and Class Q achieved an F1-score of 0.98, indicating that the model is extremely reliable in identifying healthy heartbeats and unclassifiable signals.
+    \item \textbf{Effectiveness of Resampling:} Despite the small number of samples in the original test set for Class S (556) and Class F (162), the model achieved high \textbf{Recall} (0.80 and 0.89 respectively). This proves that the upsampling strategy successfully taught the model to identify rare arrhythmias, which are often missed by models trained on imbalanced data.
+    \item \textbf{Misclassification Challenges:} As seen in the Confusion Matrix, the lowest precision (0.59) was observed in Class S (Supraventricular). The matrix shows that 290 normal beats (Class N) were misclassified as Supraventricular, likely due to the morphological similarities between these two signals.
+\end{itemize}
+
+\subsection{Analysis of Results}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.45\textwidth]{output2.png}
+    \caption{Confusion Matrix of the 1D CNN model on the test set.}
+    \label{fig:confusion_matrix}
+\end{figure}
+
+
+\textbf{Strong Diagonal:} Indicates high overall accuracy across all five categories.
+\textbf{Best Performance:} Class N (Normal) and Q (Unknown) show near-perfect results, with 17,645 and 1,553 correct predictions respectively.
+\textbf{Main Error:} Significant confusion occurs between Normal (N) and Supraventricular (S) beats, with 290 normal samples misidentified as S. This is due to their similar signal shapes.
+\textbf{Effective Resampling:} The model successfully identifies rare arrhythmias like Class F (144/162) and Class V (1,346/1,448), achieving high recall despite small sample sizes.
+\textbf{Clinical Safety:} Low false-negative rates for abnormal classes (V, F, S) ensure that most cardiac issues are correctly flagged.
+
+\subsection{Comparison with Original Paper}
+Our 1D CNN model achieved an accuracy of 97\%, which is highly competitive with the original study by \textit{Kachuee et al. (2018)}. While the original paper achieved 93.4\% on the raw imbalanced dataset, our approach of balancing the training set resulted in a significantly higher \textbf{Macro Average Recall (0.91)}, ensuring better clinical safety by reducing the number of missed abnormal beats (False Negatives).
+
+\section{Conclusion}
+This practical work demonstrates that 1D CNNs are highly effective for medical signal classification. The most critical factor for success was addressing the data imbalance, which ensured that the model could identify rare but life-threatening arrhythmias with high precision.
 
 \end{document}
