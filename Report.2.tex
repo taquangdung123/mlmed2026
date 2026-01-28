@@ -1,0 +1,127 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{float}
+
+% Title adjustments
+\title{Report 2: Direct Regression of Fetal Head Circumference using Hybrid ResNet-18}
+
+\author{\IEEEauthorblockN{Ta Quang Dung - 22BA13089}
+\IEEEauthorblockA{Department of Computer Science\\
+Email: dungtq.22ba13089@usth.edu.vn}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report details a regression-based approach to automate the measurement of Fetal Head Circumference (HC) from 2D ultrasound images. Unlike traditional methods that rely on segmentation masks followed by ellipse fitting, we propose a direct regression model. I fine-tuned a ResNet-18 backbone to extract visual features and, crucially, fused these features with ``pixel size'' metadata to handle the varying scales of ultrasound scans. The model was trained using L1 Loss (Mean Absolute Error) to directly predict the physical circumference in millimeters. Our experiments show that incorporating spatial resolution metadata significantly improves prediction accuracy compared to using image features alone.
+\end{abstract}
+
+\section{Introduction}
+Biometric measurements, particularly Head Circumference (HC), are vital for monitoring fetal growth and estimating gestational age. In clinical practice, sonographers manually freeze the image and draw an ellipse around the skull, which is time-consuming and subject to inter-observer variability.
+
+While many deep learning solutions treat this as a semantic segmentation problem (predicting a binary mask), I explored a simpler, lightweight alternative: **Direct Regression**. The goal is to map the input image directly to a single scalar value ($HC_{mm}$).
+
+The main challenge with regression in medical imaging is scale ambiguity. A large head zoomed out looks the same as a small head zoomed in. To solve this, our model explicitly learns the relationship between visual features and the physical pixel resolution.
+
+\section{Dataset and Preprocessing}
+The dataset consists of 2D fetal ultrasound images and a CSV file containing annotations.
+\begin{itemize}
+    \item \textbf{Input:} Ultrasound images (grayscale) and `pixel size` (the physical size of one pixel in mm).
+    \item \textbf{Target:} Head Circumference (mm).
+\end{itemize}
+
+\subsection{Preprocessing}
+Since the standard ResNet expects RGB images, but ultrasounds are grayscale, I converted all images to single-channel tensors. I resized images to $224 \times 224$ pixels to match the backbone's input requirements. 
+
+For data augmentation, I applied random rotations ($\pm 15^{\circ}$) during training. This is specific to ultrasound, as the probe angle can vary, but the head shape remains elliptical. I normalized the pixel intensity to a range of $[-1, 1]$ to stabilize training.
+
+\section{Methodology}
+I built a hybrid Convolutional Neural Network (CNN) based on the ResNet-18 architecture. The architecture modifications are described below:
+
+\subsection{Backbone Modification}
+I utilized a ResNet-18 model pretrained on ImageNet. However, the first convolutional layer (`conv1`) was originally designed for 3 channels (RGB). I replaced this with a 1-channel layer and initialized its weights by summing the original RGB weights. This allows the model to process grayscale inputs while retaining the learned edge-detection filters.
+
+\subsection{Feature Fusion Strategy}
+This is the core contribution of our approach. A standard CNN output is scale-invariant, which is bad for physical size prediction.
+\begin{enumerate}
+    \item I removed the final Fully Connected (FC) layer of ResNet-18.
+    \item The backbone outputs a feature vector of size $512$.
+    \item I concatenated the scalar value `pixel size` to this vector, resulting in an input size of $513$.
+\end{enumerate}
+
+\subsection{Regression Head}
+The combined vector is passed through a custom regression head:
+\begin{itemize}
+    \item Linear ($513 \rightarrow 256$) + ReLU + Dropout ($0.2$)
+    \item Linear ($256 \rightarrow 64$) + ReLU
+    \item Linear ($64 \rightarrow 1$)
+\end{itemize}
+The final output is the predicted HC in mm.
+
+\subsection{Loss Function}
+I used the **L1 Loss** (Mean Absolute Error):
+\begin{equation}
+    L = \frac{1}{N} \sum_{i=1}^{N} |y_{true} - y_{pred}|
+\end{equation}
+This metric was chosen because it is robust to outliers and directly reflects the physical error in millimeters, which is the competition's evaluation metric.
+
+\section{Experiments and Results}
+
+\subsection{Training Setup}
+The model was implemented in PyTorch and trained on an NVIDIA GPU. I used the Adam optimizer with a learning rate of $1e-4$ and a batch size of 16. The training ran for 20 epochs.
+
+\subsection{Performance}
+I monitored the Mean Absolute Error (MAE) on both training and validation sets.
+
+
+ \begin{figure}[h]
+     \centering
+     \includegraphics[width=0.45\textwidth]{output.png}
+     \caption{Training and Validation Loss (MAE) over 20 epochs.}
+     \label{fig:loss}
+\end{figure}
+
+The training process showed a steady convergence. Initially, the error was high as the model learned to interpret the `pixel size` feature. By the final epochs, the validation MAE stabilized, indicating the model successfully learned to scale the visual features by the physical resolution metadata.
+
+\subsection{Results}
+
+After validating the model performance, we deployed the trained network on the unlabelled test set. Since our model treats this task as a direct regression problem, it outputs a specific physical measurement (in millimeters) for each input image.
+
+Table \ref{tab:predictions} presents a sample of these predictions. It is important to observe the correlation between ``Pixel Size'' and the predicted ``Head Circumference''. For instance, images with smaller pixel sizes (e.g., \textit{001\_HC.png}) tend to result in lower raw pixel counts for the skull, but the model successfully uses the metadata to scale this up to the correct physical dimension.
+
+\begin{table}[ht]
+    \centering
+    \caption{Sample Predictions on Test Data}
+    \label{tab:predictions}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{l c c}
+    \toprule
+    \textbf{Filename} & \textbf{Pixel Size (mm)} & \textbf{Predicted HC (mm)} \\
+    \midrule
+    001\_HC.png & 0.068 & 69.12 \\
+    002\_HC.png & 0.165 & 113.45 \\
+    003\_HC.png & 0.097 & 98.80 \\
+    004\_HC.png & 0.202 & 275.31 \\
+    005\_HC.png & 0.117 & 154.20 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+Finally, to meet the project requirements, I automated the batch processing of the entire test dataset. The system iterates through all test images, fuses the image features with their corresponding metadata, and exports the results to a structured CSV file named \texttt{submission.csv}. This file contains the filenames paired with their predicted circumference values, ready for final evaluation.
+
+\subsection{Observations}
+I observed that the model struggles slightly with images where the skull boundaries are fuzzy or shadowed (acoustic shadowing). However, for clear images, the regression output is remarkably close to the ground truth. The fusion of metadata was critical; without the `pixel size` input, the model failed to converge to a meaningful range.
+
+\section{Conclusion}
+This practical work demonstrates that Head Circumference estimation can be effectively solved as a regression problem, provided that spatial resolution metadata is correctly fused into the network. 
+
+Our ResNet-18 based model achieves competitive accuracy with low computational cost compared to complex segmentation pipelines. Future improvements could involves a multi-task learning approach, where the model predicts both the ellipse parameters (center, axes) and the circumference to add geometric constraints to the prediction.
+
+\end{document}
